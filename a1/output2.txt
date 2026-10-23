@@ -1,0 +1,306 @@
+
+Transformation Matrix T_0^1:
+⎡cos(θ₁)  0   -sin(θ₁)  0 ⎤
+⎢                         ⎥
+⎢sin(θ₁)  0   cos(θ₁)   0 ⎥
+⎢                         ⎥
+⎢   0     -1     0      d₁⎥
+⎢                         ⎥
+⎣   0     0      0      1 ⎦
+
+Transformation Matrix T_1^2:
+⎡cos(θ₂)  0  sin(θ₂)   0⎤
+⎢                       ⎥
+⎢sin(θ₂)  0  -cos(θ₂)  0⎥
+⎢                       ⎥
+⎢   0     1     0      0⎥
+⎢                       ⎥
+⎣   0     0     0      1⎦
+
+Transformation Matrix T_2^3:
+⎡cos(θ₃)  0  sin(θ₃)   a₃⋅cos(θ₃)⎤
+⎢                                ⎥
+⎢sin(θ₃)  0  -cos(θ₃)  a₃⋅sin(θ₃)⎥
+⎢                                ⎥
+⎢   0     1     0          d₃    ⎥
+⎢                                ⎥
+⎣   0     0     0          1     ⎦
+
+Transformation Matrix T_3^4:
+⎡cos(θ₄)  0   -sin(θ₄)  a₄⋅cos(θ₄)⎤
+⎢                                 ⎥
+⎢sin(θ₄)  0   cos(θ₄)   a₄⋅sin(θ₄)⎥
+⎢                                 ⎥
+⎢   0     -1     0          0     ⎥
+⎢                                 ⎥
+⎣   0     0      0          1     ⎦
+
+Transformation Matrix T_4^5:
+⎡cos(θ₅)  0  sin(θ₅)   0 ⎤
+⎢                        ⎥
+⎢sin(θ₅)  0  -cos(θ₅)  0 ⎥
+⎢                        ⎥
+⎢   0     1     0      d₅⎥
+⎢                        ⎥
+⎣   0     0     0      1 ⎦
+
+Transformation Matrix T_5^6:
+⎡cos(θ₆)  0  sin(θ₆)   a₆⋅cos(θ₆)⎤
+⎢                                ⎥
+⎢sin(θ₆)  0  -cos(θ₆)  a₆⋅sin(θ₆)⎥
+⎢                                ⎥
+⎢   0     1     0          0     ⎥
+⎢                                ⎥
+⎣   0     0     0          1     ⎦
+
+Transformation Matrix T_6^7:
+⎡cos(θ₇)  -sin(θ₇)  0  0 ⎤
+⎢                        ⎥
+⎢sin(θ₇)  cos(θ₇)   0  0 ⎥
+⎢                        ⎥
+⎢   0        0      1  d₇⎥
+⎢                        ⎥
+⎣   0        0      0  1 ⎦
+FINAL HOMOGENEOUS TRANSFORMATION MATRIX (T_0^7)
+⎡-((((sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅cos(θ₄) - sin(θ₂)⋅sin(θ₄)⋅cos ↪
+⎢                                                                              ↪
+⎢((((sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁))⋅cos(θ₄) + sin(θ₁)⋅sin(θ₂)⋅sin( ↪
+⎢                                                                              ↪
+⎢                                                                              ↪
+⎢                                                                              ↪
+⎣                                                                              ↪
+
+↪ (θ₁))⋅cos(θ₅) + (sin(θ₁)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁)⋅cos(θ₂))⋅sin(θ₅))⋅cos(θ₆) ↪
+↪                                                                              ↪
+↪ θ₄))⋅cos(θ₅) - (sin(θ₁)⋅sin(θ₃)⋅cos(θ₂) - cos(θ₁)⋅cos(θ₃))⋅sin(θ₅))⋅cos(θ₆)  ↪
+↪                                                                              ↪
+↪      -(((sin(θ₂)⋅cos(θ₃)⋅cos(θ₄) - sin(θ₄)⋅cos(θ₂))⋅cos(θ₅) - sin(θ₂)⋅sin(θ₃ ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪  - ((sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅sin(θ₄) + sin(θ₂)⋅cos(θ₁)⋅co ↪
+↪                                                                              ↪
+↪ - ((sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁))⋅sin(θ₄) - sin(θ₁)⋅sin(θ₂)⋅cos ↪
+↪                                                                              ↪
+↪ )⋅sin(θ₅))⋅cos(θ₆) - (sin(θ₂)⋅sin(θ₄)⋅cos(θ₃) + cos(θ₂)⋅cos(θ₄))⋅sin(θ₆))⋅co ↪
+↪                                                                              ↪
+↪                                                  0                           ↪
+
+↪ s(θ₄))⋅sin(θ₆))⋅cos(θ₇) - (((sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅cos( ↪
+↪                                                                              ↪
+↪ (θ₄))⋅sin(θ₆))⋅cos(θ₇) + (((sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁))⋅cos(θ ↪
+↪                                                                              ↪
+↪ s(θ₇) - ((sin(θ₂)⋅cos(θ₃)⋅cos(θ₄) - sin(θ₄)⋅cos(θ₂))⋅sin(θ₅) + sin(θ₂)⋅sin(θ ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ θ₄) - sin(θ₂)⋅sin(θ₄)⋅cos(θ₁))⋅sin(θ₅) - (sin(θ₁)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁)⋅ ↪
+↪                                                                              ↪
+↪ ₄) + sin(θ₁)⋅sin(θ₂)⋅sin(θ₄))⋅sin(θ₅) + (sin(θ₁)⋅sin(θ₃)⋅cos(θ₂) - cos(θ₁)⋅c ↪
+↪                                                                              ↪
+↪ ₃)⋅cos(θ₅))⋅sin(θ₇)                                                          ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ cos(θ₂))⋅cos(θ₅))⋅sin(θ₇)  ((((sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅co ↪
+↪                                                                              ↪
+↪ os(θ₃))⋅cos(θ₅))⋅sin(θ₇)   -((((sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁))⋅c ↪
+↪                                                                              ↪
+↪                                                                              ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ s(θ₄) - sin(θ₂)⋅sin(θ₄)⋅cos(θ₁))⋅cos(θ₅) + (sin(θ₁)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁ ↪
+↪                                                                              ↪
+↪ os(θ₄) + sin(θ₁)⋅sin(θ₂)⋅sin(θ₄))⋅cos(θ₅) - (sin(θ₁)⋅sin(θ₃)⋅cos(θ₂) - cos(θ ↪
+↪                                                                              ↪
+↪                                  (((sin(θ₂)⋅cos(θ₃)⋅cos(θ₄) - sin(θ₄)⋅cos(θ₂ ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ )⋅cos(θ₂))⋅sin(θ₅))⋅cos(θ₆) - ((sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅s ↪
+↪                                                                              ↪
+↪ ₁)⋅cos(θ₃))⋅sin(θ₅))⋅cos(θ₆) - ((sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁))⋅ ↪
+↪                                                                              ↪
+↪ ))⋅cos(θ₅) - sin(θ₂)⋅sin(θ₃)⋅sin(θ₅))⋅cos(θ₆) - (sin(θ₂)⋅sin(θ₄)⋅cos(θ₃) + c ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ in(θ₄) + sin(θ₂)⋅cos(θ₁)⋅cos(θ₄))⋅sin(θ₆))⋅sin(θ₇) - (((sin(θ₁)⋅sin(θ₃) - co ↪
+↪                                                                              ↪
+↪ sin(θ₄) - sin(θ₁)⋅sin(θ₂)⋅cos(θ₄))⋅sin(θ₆))⋅sin(θ₇) + (((sin(θ₁)⋅cos(θ₂)⋅cos ↪
+↪                                                                              ↪
+↪ os(θ₂)⋅cos(θ₄))⋅sin(θ₆))⋅sin(θ₇) - ((sin(θ₂)⋅cos(θ₃)⋅cos(θ₄) - sin(θ₄)⋅cos(θ ↪
+↪                                                                              ↪
+↪  0                                                                           ↪
+
+↪ s(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅cos(θ₄) - sin(θ₂)⋅sin(θ₄)⋅cos(θ₁))⋅sin(θ₅) - (sin(θ₁) ↪
+↪                                                                              ↪
+↪ (θ₃) + sin(θ₃)⋅cos(θ₁))⋅cos(θ₄) + sin(θ₁)⋅sin(θ₂)⋅sin(θ₄))⋅sin(θ₅) + (sin(θ₁ ↪
+↪                                                                              ↪
+↪ ₂))⋅sin(θ₅) + sin(θ₂)⋅sin(θ₃)⋅cos(θ₅))⋅cos(θ₇)                               ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ ⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁)⋅cos(θ₂))⋅cos(θ₅))⋅cos(θ₇)   -(((sin(θ₁)⋅sin(θ₃) - ↪
+↪                                                                              ↪
+↪ )⋅sin(θ₃)⋅cos(θ₂) - cos(θ₁)⋅cos(θ₃))⋅cos(θ₅))⋅cos(θ₇)  (((sin(θ₁)⋅cos(θ₂)⋅co ↪
+↪                                                                              ↪
+↪                                                                              ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪  cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅cos(θ₄) - sin(θ₂)⋅sin(θ₄)⋅cos(θ₁))⋅cos(θ₅) + (sin( ↪
+↪                                                                              ↪
+↪ s(θ₃) + sin(θ₃)⋅cos(θ₁))⋅cos(θ₄) + sin(θ₁)⋅sin(θ₂)⋅sin(θ₄))⋅cos(θ₅) - (sin(θ ↪
+↪                                                                              ↪
+↪                              -((sin(θ₂)⋅cos(θ₃)⋅cos(θ₄) - sin(θ₄)⋅cos(θ₂))⋅c ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ θ₁)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁)⋅cos(θ₂))⋅sin(θ₅))⋅sin(θ₆) - ((sin(θ₁)⋅sin(θ₃)  ↪
+↪                                                                              ↪
+↪ ₁)⋅sin(θ₃)⋅cos(θ₂) - cos(θ₁)⋅cos(θ₃))⋅sin(θ₅))⋅sin(θ₆) + ((sin(θ₁)⋅cos(θ₂)⋅c ↪
+↪                                                                              ↪
+↪ os(θ₅) - sin(θ₂)⋅sin(θ₃)⋅sin(θ₅))⋅sin(θ₆) - (sin(θ₂)⋅sin(θ₄)⋅cos(θ₃) + cos(θ ↪
+↪                                                                              ↪
+↪                        0                                                     ↪
+
+↪ - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅sin(θ₄) + sin(θ₂)⋅cos(θ₁)⋅cos(θ₄))⋅cos(θ₆)  -a₃⋅s ↪
+↪                                                                              ↪
+↪ os(θ₃) + sin(θ₃)⋅cos(θ₁))⋅sin(θ₄) - sin(θ₁)⋅sin(θ₂)⋅cos(θ₄))⋅cos(θ₆)   a₃⋅si ↪
+↪                                                                              ↪
+↪ ₂)⋅cos(θ₄))⋅cos(θ₆)                                                          ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ in(θ₁)⋅sin(θ₃) + a₃⋅cos(θ₁)⋅cos(θ₂)⋅cos(θ₃) - a₄⋅(sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅ ↪
+↪                                                                              ↪
+↪ n(θ₁)⋅cos(θ₂)⋅cos(θ₃) + a₃⋅sin(θ₃)⋅cos(θ₁) + a₄⋅(sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + s ↪
+↪                                                                              ↪
+↪                                                                              ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ cos(θ₂)⋅cos(θ₃))⋅cos(θ₄) + a₄⋅sin(θ₂)⋅sin(θ₄)⋅cos(θ₁) - a₆⋅(((sin(θ₁)⋅sin(θ₃ ↪
+↪                                                                              ↪
+↪ in(θ₃)⋅cos(θ₁))⋅cos(θ₄) + a₄⋅sin(θ₁)⋅sin(θ₂)⋅sin(θ₄) + a₆⋅(((sin(θ₁)⋅cos(θ₂) ↪
+↪                                                                              ↪
+↪                                                                        -a₃⋅s ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ ) - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅cos(θ₄) - sin(θ₂)⋅sin(θ₄)⋅cos(θ₁))⋅cos(θ₅) + (s ↪
+↪                                                                              ↪
+↪ ⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁))⋅cos(θ₄) + sin(θ₁)⋅sin(θ₂)⋅sin(θ₄))⋅cos(θ₅) - (si ↪
+↪                                                                              ↪
+↪ in(θ₂)⋅cos(θ₃) - a₄⋅sin(θ₂)⋅cos(θ₃)⋅cos(θ₄) + a₄⋅sin(θ₄)⋅cos(θ₂) - a₆⋅((sin( ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ in(θ₁)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁)⋅cos(θ₂))⋅sin(θ₅))⋅cos(θ₆) + a₆⋅((sin(θ₁)⋅si ↪
+↪                                                                              ↪
+↪ n(θ₁)⋅sin(θ₃)⋅cos(θ₂) - cos(θ₁)⋅cos(θ₃))⋅sin(θ₅))⋅cos(θ₆) - a₆⋅((sin(θ₁)⋅cos ↪
+↪                                                                              ↪
+↪ θ₂)⋅cos(θ₃)⋅cos(θ₄) - sin(θ₄)⋅cos(θ₂))⋅cos(θ₅) - sin(θ₂)⋅sin(θ₃)⋅sin(θ₅))⋅co ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ n(θ₃) - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅sin(θ₄) + sin(θ₂)⋅cos(θ₁)⋅cos(θ₄))⋅sin(θ₆)  ↪
+↪                                                                              ↪
+↪ (θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁))⋅sin(θ₄) - sin(θ₁)⋅sin(θ₂)⋅cos(θ₄))⋅sin(θ₆) + ↪
+↪                                                                              ↪
+↪ s(θ₆) + a₆⋅(sin(θ₂)⋅sin(θ₄)⋅cos(θ₃) + cos(θ₂)⋅cos(θ₄))⋅sin(θ₆) + d₁ + d₃⋅cos ↪
+↪                                                                              ↪
+↪                                                             1                ↪
+
+↪ + d₃⋅sin(θ₂)⋅cos(θ₁) + d₅⋅((sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅cos(θ₂)⋅cos(θ₃))⋅sin(θ ↪
+↪                                                                              ↪
+↪  d₃⋅sin(θ₁)⋅sin(θ₂) - d₅⋅((sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos(θ₁))⋅sin(θ₄ ↪
+↪                                                                              ↪
+↪ (θ₂) + d₅⋅(sin(θ₂)⋅sin(θ₄)⋅cos(θ₃) + cos(θ₂)⋅cos(θ₄)) - d₇⋅(((sin(θ₂)⋅cos(θ₃ ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ ₄) + sin(θ₂)⋅cos(θ₁)⋅cos(θ₄)) - d₇⋅((((sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅cos(θ₂)⋅cos ↪
+↪                                                                              ↪
+↪ ) - sin(θ₁)⋅sin(θ₂)⋅cos(θ₄)) + d₇⋅((((sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos( ↪
+↪                                                                              ↪
+↪ )⋅cos(θ₄) - sin(θ₄)⋅cos(θ₂))⋅cos(θ₅) - sin(θ₂)⋅sin(θ₃)⋅sin(θ₅))⋅sin(θ₆) + (s ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ (θ₃))⋅cos(θ₄) - sin(θ₂)⋅sin(θ₄)⋅cos(θ₁))⋅cos(θ₅) + (sin(θ₁)⋅cos(θ₃) + sin(θ₃ ↪
+↪                                                                              ↪
+↪ θ₁))⋅cos(θ₄) + sin(θ₁)⋅sin(θ₂)⋅sin(θ₄))⋅cos(θ₅) - (sin(θ₁)⋅sin(θ₃)⋅cos(θ₂) - ↪
+↪                                                                              ↪
+↪ in(θ₂)⋅sin(θ₄)⋅cos(θ₃) + cos(θ₂)⋅cos(θ₄))⋅cos(θ₆))                           ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ )⋅cos(θ₁)⋅cos(θ₂))⋅sin(θ₅))⋅sin(θ₆) + ((sin(θ₁)⋅sin(θ₃) - cos(θ₁)⋅cos(θ₂)⋅co ↪
+↪                                                                              ↪
+↪  cos(θ₁)⋅cos(θ₃))⋅sin(θ₅))⋅sin(θ₆) + ((sin(θ₁)⋅cos(θ₂)⋅cos(θ₃) + sin(θ₃)⋅cos ↪
+↪                                                                              ↪
+↪                                                                              ↪
+↪                                                                              ↪
+↪                                                                              ↪
+
+↪ s(θ₃))⋅sin(θ₄) + sin(θ₂)⋅cos(θ₁)⋅cos(θ₄))⋅cos(θ₆))⎤
+↪                                                   ⎥
+↪ (θ₁))⋅sin(θ₄) - sin(θ₁)⋅sin(θ₂)⋅cos(θ₄))⋅cos(θ₆)) ⎥
+↪                                                   ⎥
+↪                                                   ⎥
+↪                                                   ⎥
+↪                                                   ⎦
+
+Configuration: (a) All joint angles zero
+Joint Angles: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+Verification #1 (SymPy subs):
+[[ 1.     0.     0.     0.088]
+ [ 0.    -1.     0.     0.   ]
+ [ 0.     0.    -1.     0.926]
+ [ 0.     0.     0.     1.   ]]
+
+Verification #2 (Corke fkine):
+[[ 1.     0.     0.     0.088]
+ [ 0.    -1.    -0.    -0.   ]
+ [ 0.     0.    -1.     0.926]
+ [ 0.     0.     0.     1.   ]]
+Max Absolute Error: 1.22e-16
+Result: MATCH CONFIRMED
+
+Configuration: (b) theta2 = pi/2, other angles = 0
+Joint Angles: [0.0, 1.5707963267948966, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+Verification #1 (SymPy subs):
+[[ 0.     0.    -1.     0.593]
+ [ 0.    -1.     0.     0.   ]
+ [-1.     0.    -0.     0.245]
+ [ 0.     0.     0.     1.   ]]
+
+Verification #2 (Corke fkine):
+[[ 0.     0.    -1.     0.593]
+ [ 0.    -1.    -0.     0.   ]
+ [-1.    -0.    -0.     0.245]
+ [ 0.     0.     0.     1.   ]]
+Max Absolute Error: 1.84e-16
+Result: MATCH CONFIRMED
+
+Configuration: (c) theta2 = theta4 = pi/2, other angles = 0
+Joint Angles: [0.0, 1.5707963267948966, 0.0, 1.5707963267948966, 0.0, 0.0, 0.0]
+
+Verification #1 (SymPy subs):
+[[ 1.      0.      0.      0.3215]
+ [ 0.     -1.      0.      0.    ]
+ [ 0.      0.     -1.      0.5275]
+ [ 0.      0.      0.      1.    ]]
+
+Verification #2 (Corke fkine):
+[[ 1.      0.      0.      0.3215]
+ [ 0.     -1.     -0.     -0.    ]
+ [ 0.      0.     -1.      0.5275]
+ [ 0.      0.      0.      1.    ]]
+Max Absolute Error: 1.22e-16
+Result: MATCH CONFIRMED
