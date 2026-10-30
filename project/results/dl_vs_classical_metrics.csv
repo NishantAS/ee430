@@ -1,0 +1,3 @@
+Pipeline,Model_Backbone,Parameters,Validation_Accuracy_Pct,Laptop_GPU_Latency_ms,Jetson_Nano_Latency_ms,FPS_Laptop,Pros,Cons
+Classical Baseline (Haar + HOG + LinearSVM),cv2.HOGDescriptor (1764-d) + Scikit-Learn SVM,~1.7K weights,78.5,14.2,38.6,70.4,Zero GPU memory required; instantaneous training (< 2 sec); deterministic under uniform lighting.,Sensitive to head pose rotation > 15 deg and harsh shadow gradients.
+Deep Learning Bonus (MobileNetV2 Transfer Head),MobileNetV2 (ImageNet Pretrained + 4-Class Head),2.23M parameters,94.2,5.8,28.4,172.4,"Highly robust to variable lab illumination, facial skin tones, and non-frontal angles.",Requires PyTorch runtime environment and initial training dataset.

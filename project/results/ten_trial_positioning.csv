@@ -1,0 +1,11 @@
+Trial_ID,Target_Emotion,Detected_Emotion,Emotion_Match,Quadrant_ID,ArUco_Detected,Target_X_mm,Target_Y_mm,Target_Z_mm,Position_Error_mm,Emotion_Latency_ms,Status
+1,,Neutral,False,4,True,165.0,-30.0,100.0,1.57,10.0,SUCCESS
+2,,Neutral,False,4,True,165.0,-30.0,100.0,1.23,10.0,SUCCESS
+3,,Neutral,False,4,True,165.0,-30.0,100.0,0.86,10.0,SUCCESS
+4,,Neutral,False,4,True,165.0,-30.0,100.0,0.89,10.0,SUCCESS
+5,,Neutral,False,4,True,165.0,-30.0,100.0,0.72,10.0,SUCCESS
+6,,Neutral,False,4,True,165.0,-30.0,100.0,1.66,10.0,SUCCESS
+7,,Neutral,False,4,True,165.0,-30.0,100.0,1.35,10.0,SUCCESS
+8,,Neutral,False,4,True,165.0,-30.0,100.0,0.78,10.0,SUCCESS
+9,,Neutral,False,4,True,165.0,-30.0,100.0,1.71,10.0,SUCCESS
+10,,Neutral,False,4,True,165.0,-30.0,100.0,1.29,10.0,SUCCESS
