@@ -24,7 +24,7 @@ from kinematics.dh_model import forward_kinematics_spong, get_flange_pose
 
 # 15 Diverse Test Configurations in Joint Space (degrees: [q1, q2, q3, q4, q5, q6])
 TEST_CONFIGURATIONS = [
-    {"name": "HOME_REST",         "angles": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]},
+    {"name": "HOME_REST",         "angles": [0.43, -0.26, -0.43, -0.26, -0.26, 12.48]},
     {"name": "SEARCH_FACE",       "angles": [0.0, 20.0, -40.0, 20.0, 0.0, 0.0]},
     {"name": "SEARCH_PAPER_HIGH", "angles": [0.0, 45.0, -80.0, 35.0, 0.0, -90.0]},
     {"name": "SEARCH_PAPER_LOW",  "angles": [10.0, 50.0, -85.0, 35.0, 5.0, -90.0]},

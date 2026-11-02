@@ -25,8 +25,11 @@ EMOTION_LABELS = {
 }
 
 
+DEFAULT_MODEL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dl", "classical_hog_svm.joblib")
+
+
 class ClassicalEmotionClassifier:
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: Optional[str] = DEFAULT_MODEL, require_model: bool = True):
         # Locate Haar Cascade XML (custom asset fallback or system cv2 data)
         local_cascade = os.path.join(os.path.dirname(__file__), "..", "assets", "haarcascade_frontalface_default.xml")
         cv2_cascade = getattr(cv2.data, "haarcascades", "") + "haarcascade_frontalface_default.xml"
@@ -37,11 +40,15 @@ class ClassicalEmotionClassifier:
         # winSize=(64,64), blockSize=(16,16), blockStride=(8,8), cellSize=(8,8), nbins=9
         self.hog = cv2.HOGDescriptor((64, 64), (16, 16), (8, 8), (8, 8), 9)
 
-        # Lightweight linear weights (calibrated default or trained)
+        # Linear classifier trained by dl/train_eval.py (labels 0..3 -> emotion ids 1..4)
         self.model = None
         if model_path and os.path.exists(model_path):
             import joblib
             self.model = joblib.load(model_path)
+        elif require_model:
+            raise FileNotFoundError(
+                f"No trained classical model at {model_path}. Collect data with dl/dataset_collector.py "
+                f"and run dl/train_eval.py first (the old heuristic fallback always answered Neutral).")
 
     def extract_hog_features(self, face_gray: np.ndarray) -> np.ndarray:
         """Resizes face crop to 64x64 and computes 1764-dimensional HOG vector."""
@@ -60,10 +67,10 @@ class ClassicalEmotionClassifier:
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
 
         faces = self.face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.15,
-            minNeighbors=5,
-            minSize=(80, 80)
+            cv2.equalizeHist(gray),
+            scaleFactor=1.1,
+            minNeighbors=4,
+            minSize=(60, 60)
         )
 
         if len(faces) == 0:
@@ -77,25 +84,7 @@ class ClassicalEmotionClassifier:
 
         features = self.extract_hog_features(face_roi)
 
-        if self.model is not None:
-            pred_id = int(self.model.predict([features])[0])
-        else:
-            # Deterministic geometric / energy heuristic fallback if no pre-trained weights file
-            # Computes mouth-to-upper-face intensity and gradient ratio
-            upper_roi = face_roi[0:int(h * 0.5), :]
-            lower_roi = face_roi[int(h * 0.5):, :]
-            mouth_energy = np.std(lower_roi)
-            upper_energy = np.std(upper_roi)
-            ratio = mouth_energy / (upper_energy + 1e-5)
-
-            if ratio > 1.35:
-                pred_id = 3  # Surprise (wide open mouth)
-            elif ratio > 1.10:
-                pred_id = 1  # Happy (smile curvature)
-            elif upper_energy > mouth_energy * 1.15:
-                pred_id = 2  # Angry (furrowed brow)
-            else:
-                pred_id = 4  # Neutral
+        pred_id = int(self.model.predict([features])[0]) + 1
 
         elapsed_ms = (time.perf_counter() - t0) * 1000.0
         label = EMOTION_LABELS.get(pred_id, "Unknown")

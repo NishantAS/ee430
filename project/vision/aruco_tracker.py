@@ -15,7 +15,15 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from vision.aruco_board import QUADRANT_CENTERS_MM, MARKER_SIZE_MM, MARKER_POSITIONS_MM
-from kinematics.dh_model import forward_kinematics_spong, is_target_reachable
+from kinematics.dh_model import euler_zyx_to_rotation_matrix, is_target_reachable
+
+
+def pose_to_matrix(coords: List[float]) -> np.ndarray:
+    """^0T_6 from the robot's own get_coords() [x, y, z (mm), rx, ry, rz (deg)] (no joint angles / FK needed)."""
+    t = np.eye(4, dtype=np.float64)
+    t[0:3, 0:3] = euler_zyx_to_rotation_matrix(coords[3], coords[4], coords[5])
+    t[0:3, 3] = coords[0:3]
+    return t
 
 
 class ArUcoTracker:
@@ -67,6 +75,24 @@ class ArUcoTracker:
 
         return corners, ids
 
+    def paper_roll_deg(self, corners, ids) -> Optional[float]:
+        """
+        In-plane rotation of the sheet in the image, in degrees (0 = sheet upright, i.e. marker top
+        edges run left->right; range (-180, 180]). Works with any subset of the board markers, so it
+        can steer the camera roll even when the sheet is partly outside the field of view.
+        """
+        if ids is None or len(ids) == 0:
+            return None
+        vecs = []
+        for i, m_id in enumerate(ids.flatten()):
+            if m_id in self.marker_3d_corners:
+                c = corners[i][0]
+                vecs.append(c[1] - c[0])  # marker top edge: TL -> TR
+        if not vecs:
+            return None
+        v = np.mean([np.array(x) / (np.linalg.norm(x) + 1e-9) for x in vecs], axis=0)
+        return float(np.degrees(np.arctan2(v[1], v[0])))
+
     def estimate_paper_pose(self, corners, ids) -> Optional[np.ndarray]:
         """
         Computes 4x4 homogeneous transform ^C T_M (Paper Frame {M} in Camera Frame {C})
@@ -109,12 +135,13 @@ class ArUcoTracker:
         self,
         quadrant_id: int,
         t_cam_paper: np.ndarray,
-        current_joint_angles_deg: List[float],
-        hover_height_z: float = 100.0
+        current_coords: List[float],
+        hover_height_z: float = 100.0,
+        hover_orientation_deg: Optional[List[float]] = None
     ) -> Tuple[Optional[List[float]], str]:
         """
         Transforms quadrant center into Base Frame {0}:
-            ^0 p_quadrant = ^0 T_6(q_search) * ^6 T_C * ^C T_M * ^M p_quadrant
+            ^0 p_quadrant = ^0 T_6(coords at search) * ^6 T_C * ^C T_M * ^M p_quadrant
 
         Then computes camera-centered hover command:
             [X_cmd, Y_cmd, Z_hover, Rx, Ry, Rz]
@@ -122,8 +149,8 @@ class ArUcoTracker:
         if quadrant_id not in QUADRANT_CENTERS_MM:
             return None, f"Invalid quadrant id: {quadrant_id}"
 
-        # 1. Forward Kinematics of arm at search pose: ^0 T_6
-        t_0_6 = forward_kinematics_spong(current_joint_angles_deg)
+        # 1. End-effector pose at search time, straight from the robot: ^0 T_6
+        t_0_6 = pose_to_matrix(current_coords)
 
         # 2. Quadrant center in Paper Frame {M}
         p_m = np.append(QUADRANT_CENTERS_MM[quadrant_id]["pos"], 1.0)  # homogeneous [x, y, z, 1]
@@ -133,11 +160,12 @@ class ArUcoTracker:
         p_world_target = t_0_6 @ self.T_6_C @ t_cam_paper @ p_m
         tx, ty = p_world_target[0], p_world_target[1]
 
-        # 4. Subtract camera lens offset so camera optical axis points directly at target
-        # For top-down vertical hover (Rx=180, Ry=0, Rz=-90)
-        # ^6 T_C horizontal offset along X6 is -30 mm
-        flange_target_x = tx - self.T_6_C[0, 3]
-        flange_target_y = ty - self.T_6_C[1, 3]
+        # 4. Camera physical offset in the base frame. The hover keeps the search-pose flange
+        # orientation (rx, ry, rz as reported by the robot), so ^0R_6 at the search pose is exact.
+        cam_offset_in_base = t_0_6[0:3, 0:3] @ self.T_6_C[0:3, 3]
+
+        flange_target_x = tx - cam_offset_in_base[0]
+        flange_target_y = ty - cam_offset_in_base[1]
         flange_target_z = hover_height_z
 
         # 5. Check workspace safety
@@ -150,9 +178,7 @@ class ArUcoTracker:
             float(flange_target_x),
             float(flange_target_y),
             float(flange_target_z),
-            180.0,
-            0.0,
-            -90.0
+            *(hover_orientation_deg if hover_orientation_deg is not None else (180.0, 0.0, -90.0))
         ]
         return target_coords, "Target pose successfully computed."
 

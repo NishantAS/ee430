@@ -26,8 +26,12 @@ EMOTION_MAP = {
 }
 
 
+DEFAULT_WEIGHTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "emotion_mobilenet.pth")
+
+
 class DLEmotionClassifier:
-    def __init__(self, weights_path: Optional[str] = "project/dl/emotion_mobilenet.pth", device: Optional[str] = None):
+    def __init__(self, weights_path: Optional[str] = DEFAULT_WEIGHTS, device: Optional[str] = None,
+                 require_weights: bool = True):
         if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
@@ -48,12 +52,14 @@ class DLEmotionClassifier:
         self.model.classifier[1] = nn.Linear(in_features, 4)
 
         if weights_path and os.path.exists(weights_path):
-            try:
-                state_dict = torch.load(weights_path, map_location=self.device)
-                self.model.load_state_dict(state_dict)
-                print(f"Loaded fine-tuned DL weights from: {weights_path}")
-            except Exception as e:
-                print(f"Warning: Could not load weights from {weights_path} ({e}). Using initialized backbone.")
+            state_dict = torch.load(weights_path, map_location=self.device)
+            self.model.load_state_dict(state_dict)
+            print(f"Loaded fine-tuned DL weights from: {weights_path}")
+        elif require_weights:
+            # An untrained 4-way head outputs a fixed arbitrary class, so refuse to run rather than mislead
+            raise FileNotFoundError(
+                f"No trained weights at {weights_path}. Collect data with dl/dataset_collector.py "
+                f"and run dl/train_eval.py first.")
 
         self.model.to(self.device)
         self.model.eval()
@@ -76,7 +82,7 @@ class DLEmotionClassifier:
         """
         t0 = time.perf_counter()
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-        faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.15, minNeighbors=5, minSize=(80, 80))
+        faces = self.face_cascade.detectMultiScale(cv2.equalizeHist(gray), scaleFactor=1.1, minNeighbors=4, minSize=(60, 60))
 
         if len(faces) == 0:
             elapsed_ms = (time.perf_counter() - t0) * 1000.0

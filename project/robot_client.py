@@ -1,9 +1,9 @@
 """
 Robot Remote RPC Client & Video Receiver.
 
-Connects to robot_bridge.py running on Jetson Nano over TCP:
-- Video on port 5000 (receives JPEG frames)
-- Commands on port 5001 (sends send_angles, send_coords, get_angles, get_coords)
+Connects to robot_bridge.py running on Jetson Nano over TCP for motion commands only (port 5001:
+send_angles, send_coords, get_angles, get_coords). The flange camera is plugged into the laptop and is read
+locally with OpenCV (background thread, newest frame only).
 
 Supports fallback to local mock mode if --mock is passed.
 """
@@ -12,25 +12,35 @@ import socket
 import json
 import struct
 import time
+import threading
 import numpy as np
 import cv2
 from typing import Optional, List, Tuple
 
 
 class RobotRemoteClient:
-    def __init__(self, host: str = "127.0.0.1", video_port: int = 5000, cmd_port: int = 5001, mock: bool = False):
+    def __init__(self, host: str = "127.0.0.1", cmd_port: int = 5001, mock: bool = False, camera_index: Optional[int] = None):
         self.host = host
-        self.video_port = video_port
+        self.camera_index = camera_index
         self.cmd_port = cmd_port
         self.mock = mock
 
         self.cmd_sock = None
-        self.video_sock = None
         self.mock_angles = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.mock_coords = [150.0, 0.0, 200.0, 180.0, 0.0, -90.0]
 
+        # Newest decoded frame, filled by a background thread so slow vision code never backs up the socket
+        self._latest_frame = None
+        self._frame_id = 0
+        self._frame_cond = threading.Condition()
+        self._last_read_id = -1
+        self._stream_running = False
+        self._cap = None
+
         if not self.mock:
             self._connect()
+        if camera_index is not None:
+            self._open_camera()
 
     def _connect(self):
         try:
@@ -41,12 +51,20 @@ class RobotRemoteClient:
             print(f"Warning: Could not connect to command server ({e}). Falling back to mock robot.")
             self.mock = True
 
-        try:
-            self.video_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.video_sock.connect((self.host, self.video_port))
-            print(f"Connected to Robot Video Server at {self.host}:{self.video_port}")
-        except Exception as e:
-            print(f"Warning: Could not connect to video server ({e}). Falling back to local camera/mock frames.")
+    def _open_camera(self):
+        """Opens the laptop-attached camera (MJPG, tiny buffer) and starts the newest-frame reader thread."""
+        cap = cv2.VideoCapture(self.camera_index)
+        if not cap.isOpened():
+            print(f"Warning: Cannot open camera index {self.camera_index}. Using simulated frames.")
+            return
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        self._cap = cap
+        self._stream_running = True
+        threading.Thread(target=self._camera_reader, daemon=True).start()
+        print(f"Camera {self.camera_index} opened ({int(cap.get(3))}x{int(cap.get(4))})")
 
     def send_angles(self, angles: List[float], speed: int = 30) -> bool:
         if self.mock or self.cmd_sock is None:
@@ -90,39 +108,32 @@ class RobotRemoteClient:
             print(f"RPC communication error: {e}")
             return {"status": "error", "message": str(e)}
 
-    def read_frame(self, local_cap=None) -> Optional[np.ndarray]:
-        """Reads frame either from TCP video stream, local webcam, or generates mock frame."""
-        if self.video_sock is not None:
-            try:
-                raw_size = self._recv_exact(self.video_sock, 4)
-                if not raw_size:
-                    return None
-                size = struct.unpack(">L", raw_size)[0]
-                frame_data = self._recv_exact(self.video_sock, size)
-                if not frame_data:
-                    return None
-                img = cv2.imdecode(np.frombuffer(frame_data, dtype=np.uint8), cv2.IMREAD_COLOR)
-                return img
-            except Exception:
-                pass
+    def _camera_reader(self):
+        """Grabs frames as fast as the camera delivers them; only the newest one is kept."""
+        while self._stream_running:
+            ret, img = self._cap.read()
+            if not ret or img is None:
+                time.sleep(0.01)
+                continue
+            with self._frame_cond:
+                self._latest_frame = img
+                self._frame_id += 1
+                self._frame_cond.notify_all()
 
-        if local_cap is not None and local_cap.isOpened():
-            ret, frame = local_cap.read()
-            if ret:
-                return frame
+    def read_frame(self, local_cap=None, timeout: float = 1.0) -> Optional[np.ndarray]:
+        """
+        Returns the newest frame: waits (up to timeout) for one that has not been returned yet,
+        so callers always get a fresh image and never a queued-up stale one.
+        """
+        if self._stream_running:
+            with self._frame_cond:
+                self._frame_cond.wait_for(lambda: self._frame_id != self._last_read_id, timeout=timeout)
+                if self._latest_frame is not None:
+                    self._last_read_id = self._frame_id
+                    return self._latest_frame.copy()
 
         # Synthetic fallback frame
         frame = np.full((480, 640, 3), 40, dtype=np.uint8)
         cv2.putText(frame, "SIMULATED TEST VIDEO FEED", (60, 240),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
         return frame
-
-    def _recv_exact(self, sock: socket.socket, n_bytes: int) -> Optional[bytes]:
-        data = bytearray()
-        while len(data) < n_bytes:
-            packet = sock.recv(n_bytes - len(data))
-            if not packet:
-                return None
-            data.extend(packet)
-        return bytes(data)
-
