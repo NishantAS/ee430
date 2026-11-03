@@ -1,4 +1,7 @@
 .venv/
+.myenv/
 __pycache__/
 *.pyc
-*/__pycache__/
+# downloaded automatically / too large for the code archive
+project/assets/hand_landmarker.task
+project/dl/dataset/

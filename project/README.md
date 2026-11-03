@@ -1,128 +1,123 @@
-# EE430 Course Project: Vision-Guided Affective Manipulator (myCobot 280 Jetson Nano)
+# EE430 – Gesture-commanded myCobot 280 (Jetson Nano)
 
-An autonomous affective robotics pipeline connecting Spong Standard Denavit-Hartenberg (DH) kinematics, Eye-in-Hand camera calibration, ArUco fiducial paper localization, and facial expression recognition (Classical HOG+SVM & MobileNetV2 Deep Learning Bonus) on the 6-DOF **myCobot 280 Jetson Nano**.
+Show **1–4 fingers** to the camera on the robot's flange → the arm hovers over that quadrant of a printed
+ArUco target sheet.
 
----
+| Rubric | What does it | Command |
+|---|---|---|
+| A1 task | gesture → quadrant hover, repeatable | `main.py` |
+| A2 FK vs own DH | 15 poses, our FK vs `get_coords()` | `experiments.py fk` |
+| A3 IK | robot's built-in IK (`send_coords`) from elbow-up/down starts: branch choice + unreachable targets | `experiments.py ik` |
+| A4 frames/units | mm + degrees everywhere, one base frame, `config.py` | – |
+| B1 detection | ArUco sheet + classical finger counter | `vision/` |
+| B2 calibration | pixel → robot-base homography from touched points | `calibrate.py table` |
+| B3 closed loop | vision output → `send_coords` (verified with `get_coords`) | `main.py` |
+| B4 ≥ 10 trials | logged to `results/trials.csv` | `main.py --trials 10 --log` |
+| E bonus | MediaPipe hand-landmark CNN vs classical, accuracy + latency | `experiments.py gestures` |
 
-## 1. System Architecture & Workflow
-
-Due to lab sharing rules, this codebase implements a **Zero-Footprint Remote Client–Server Architecture**:
-1. **Jetson Nano (Edge Node):** Runs `robot_bridge.py` (copied via SCP during lab slot and cleaned up before return). Streams flange camera video (Port 5000) and receives JSON joint/task-space RPC commands (Port 5001).
-2. **Laptop Master Controller:** Executes the state machine in `main.py`, computes Spong DH Forward Kinematics, solves ArUco pose estimation (`cv2.solvePnP`), and runs facial emotion recognition on laptop GPU.
+## How it works
 
 ```
- [Flange Camera] ---> /dev/video0 ---> robot_bridge.py (Jetson Nano)
-                                             | TCP Stream (Port 5000/5001)
-                                             v
- [Laptop FSM] --------> Emotion Pipeline (Classical vs DL)
-              --------> ArUco Board solvePnP (^C T_M)
-              --------> Spong DH Kinematics (^0 T_6 * ^6 T_C * ^C T_M * ^M p_Q)
-              --------> mc.send_coords() -> Robot arm hovers above target quadrant
+ flange camera (USB → laptop) ──► finger count (MediaPipe | classical) ──► quadrant 1-4
+                               └─► ArUco markers ──► H_sheet→pixel ─┐
+                     calibration.json: H_pixel→base, table z ───────┴─► quadrant (x, y) in base frame
+ target coords (tool straight down) ──► TCP ──► robot_bridge.py on Jetson ──► pymycobot send_coords
 ```
 
----
+* **Motion** uses pymycobot only: `send_angles` for fixed poses (home, overview: exactly repeatable) and
+  `send_coords` for task-space moves (the robot solves the IK). `send_coords` does not report failure, so
+  every move is read back with `get_coords` and raises an error if the arm does not arrive (= unreachable).
+  The "pointing down" orientation is the robot's own reading at the calibrated overview pose.
+* **Our DH model** (`kinematics/dh_model.py`) is used only to verify the robot's FK (A2) and in
+  `robot_tools.py status`.
+* **Calibration** (`calibrate.py table`): the overview pose is a fixed joint configuration, so the camera
+  always sees the table plane the same way, and pixels map to base (x, y) by a homography. It is fitted
+  from the 4 marker centres (seen in the image + touched with the tool, positions from `get_coords`) and checked
+  on a 5th touched point (sheet centre). No camera intrinsics or hand-eye matrix are needed.
+* **The sheet can move between trials**: every trial re-detects it; only the overview pose must stay fixed.
 
-## 2. Directory Structure
+## Workspace limits (important)
 
-```text
-project/
-├── README.md                        # Complete operational and reproduction guide
-├── requirements.txt                 # Dependencies (numpy, opencv, torch, pymycobot, sklearn)
-├── main.py                          # Master Finite State Machine (runs full closed-loop demo)
-├── robot_bridge.py                  # Jetson Nano lightweight video & RPC server
-├── robot_client.py                  # Laptop TCP client to bridge server
-├── assets/
-│   └── aruco_target_sheet_A4.png    # Printable 300 DPI A4 target sheet (4 ArUco corners + 4 quadrants)
-├── kinematics/                      # Component A (4%)
-│   ├── dh_model.py                  # Spong Standard DH parameter table & FK implementation
-│   ├── fk_verification.py           # Evaluates 15 test poses -> results/fk_error_table.csv
-│   └── ik_workspace_analysis.py     # Multi-solution & singularity failure case study
-├── vision/                          # Component B (4%)
-│   ├── aruco_board.py               # Generates printable A4 sheet with 4 corner markers
-│   ├── aruco_tracker.py             # CLAHE detection, solvePnP, target quadrant transform
-│   └── classical_emotion.py         # Baseline Haar Cascade + HOG (1764-d) + Linear Classifier
-├── dl/                              # Component E Bonus (+4%)
-│   ├── dataset_collector.py         # Interactive lab face dataset collector (train/test splits)
-│   ├── dl_emotion_infer.py          # MobileNetV2 transfer learning emotion inference
-│   └── train_eval.py                # Quantitative accuracy, latency, and parameter comparison
-├── calibration/                     # Calibration utilities
-│   ├── calibrate_intrinsics.py      # 9x6 checkerboard intrinsic calibration
-│   ├── hand_eye_calibration.py      # Flange-to-camera offset verification (^6 T_C)
-│   └── camera_params.npz            # Intrinsic K, distortion D, and ^6 T_C matrix
-└── results/                         # Quantitative logs for IEEE paper
-    ├── fk_error_table.csv           # Criterion A2: 15-pose error table
-    ├── ik_case_study.csv            # Criterion A3: multi-solution & failure cases
-    ├── ten_trial_positioning.csv    # Criterion B4: 10-trial positioning log
-    └── dl_vs_classical_metrics.csv  # Criterion E: DL vs Classical benchmark
-```
+With the tool pointing straight down, the arm only reaches roughly **x = 160–240 mm** from the base (closer
+in, the elbow hits its joint limit; the robot then silently ignores `send_coords`). **Put the sheet centre
+near x ≈ 200 mm, y ≈ −60 mm** (straight in front of the arm; the −60 comes from the 64.6 mm sideways wrist
+offset). `experiments.py ik` tests targets inside and outside this region on the real robot.
 
----
+## Setup (laptop, once)
 
-## 3. Installation & Setup
-
-Activate your Python virtual environment and install required packages:
 ```bash
-source .myenv/bin/activate
-pip install -r project/requirements.txt
+source ../.myenv/bin/activate        # Python ≥ 3.9
+pip install -r requirements.txt
+python calibrate.py sheet            # → assets/target_sheet_A4.png, print at 100 %, check markers = 28 mm
 ```
+The MediaPipe model (7.8 MB) downloads itself to `assets/` on first use.
 
----
+## Lab session
 
-## 4. Running the System
-
-### 4.1 Mock Simulation Mode (No Robot Hardware Needed)
-You can test the entire closed-loop state machine right on your laptop:
+**1. Start** (fill the issue form + photo first)
 ```bash
-# Run full 10-trial benchmark with simulated robot and local camera
-python project/main.py --mock --trials 10
-
-# Run Spong DH Forward Kinematics verification:
-python project/kinematics/fk_verification.py --mock
-
-# Run IK workspace & multi-solution case study:
-python project/kinematics/ik_workspace_analysis.py --mock
-
-# Run DL vs Classical benchmark evaluation:
-python project/dl/train_eval.py
+scp robot_bridge.py nano@10.42.0.1:/tmp/          # user/IP of your robot
+ssh nano@10.42.0.1 "python3 /tmp/robot_bridge.py"   # leave running; Ctrl+C to stop
 ```
+Plug the flange camera's USB into the laptop. All laptop commands run from this `project/` folder and
+accept `--host <ip>` (default `10.42.0.1`).
 
-### 4.2 Printable A4 Target Sheet
-Generate the printable 300 DPI A4 target sheet:
 ```bash
-python project/vision/aruco_board.py
+python robot_tools.py status      # connection check: angles, get_coords vs our DH FK
 ```
-Print `project/assets/aruco_target_sheet_A4.png` on standard A4 paper with 100% scale (no fit-to-page). Place it flat on the lab table within:
-- $X \in [145\text{ mm}, 185\text{ mm}]$
-- $Y \in [-40\text{ mm}, +40\text{ mm}]$
 
----
-
-## 5. Lab Session Workflow (Jetson Nano Deployment)
-
-### Step 1: Issue & SSH Setup (2:00 PM)
-1. Fill out the Robot Issue Google Form and upload the pre-session photo.
-2. Connect Ethernet cable between laptop and myCobot Jetson Nano.
-3. Copy the bridge script to the Jetson Nano:
-   ```bash
-   scp project/robot_bridge.py nano@192.168.1.xxx:/tmp/robot_bridge.py
-   ```
-4. SSH into the Jetson Nano and start the bridge:
-   ```bash
-   ssh nano@192.168.1.xxx
-   python3 /tmp/robot_bridge.py --port /dev/ttyTHS1 --cam 0
-   ```
-
-### Step 2: Run Live Master Demo on Laptop
-On your laptop:
+**2. Calibrate** (first session, and again whenever the robot or table setup changes)
 ```bash
-python project/main.py --host 192.168.1.xxx --real --trials 10
+python calibrate.py camera        # press y on the flange camera's image
+python calibrate.py overview      # move the arm by hand until all 4 markers are green, ENTER
+python calibrate.py table         # by hand: tool tip onto marker 0,1,2,3 centres + sheet centre
+python calibrate.py check         # arm visits all 4 quadrant crosses - verify by eye / ruler
+# or all four in sequence:  python calibrate.py all
+```
+Teaching by hand (camera window focused): **hold the arm**, `SPACE` releases the servos (the arm goes limp),
+move it, `ENTER` locks it exactly where it is and records the pose, `ESC` aborts. The arm is always locked
+again before the script continues or exits. For the overview the robot then straightens the camera to point
+straight down; `ENTER` saves, `SPACE` teaches again. For the touches keep the tool roughly vertical. If you tape
+a pointer to the flange, set `TOOL_LENGTH_MM` in `config.py` first.
+
+**3. Experiments and demo**
+```bash
+python experiments.py fk                         # A2
+python experiments.py ik                         # A3 (needs calibrate.py table: uses the table height)
+python robot_tools.py overview && python experiments.py collect   # label gesture images with keys 0-5
+python experiments.py gestures                   # classical vs MediaPipe → results/gesture_metrics.csv
+python main.py --trials 10 --log                 # B4 → results/trials.csv + photos; measure the miss with a ruler
+python main.py --classifier classical --trials 10 --log
+```
+In `main.py`, `q`/`ESC` stops; keys `1-4` override the gesture (logged as `keyboard`).
+
+**4. Finish**
+```bash
+python robot_tools.py home
+ssh nano@10.42.0.1 "rm -f /tmp/robot_bridge.py"     # after Ctrl+C on the bridge
+```
+Then the return form + photo.
+
+## Without the robot
+
+`--mock` replaces the arm with an instant-moving simulation (camera still real, e.g. a webcam with
+`--cam 0`). It reaches every target, so it says nothing about reachability. Anything it writes to
+`results/` is prefixed `MOCK_`, so it cannot be mixed up with lab data.
+
+## Files
+
+```
+config.py            every constant (poses, limits, heights, paths)  ← tune here
+main.py              demo
+calibrate.py         calibration steps → calibration/calibration.json
+experiments.py       report tables → results/
+robot_tools.py       status / home / overview / goto / release / lock
+robot_bridge.py      runs on the Jetson (Python 3.6 compatible)
+common/              robot_client (TCP + mock), camera, teach (hand-guiding), calibration_store
+kinematics/          dh_model: our DH forward kinematics (A2 verification only)
+vision/              sheet (ArUco + homographies + printable), gesture_classical, gestures (factory)
+dl/                  gesture_mediapipe (hand-landmark CNN)
 ```
 
-### Step 3: Cleanup & Return (4:15 PM)
-1. Stop `robot_bridge.py` on the Jetson Nano (`Ctrl+C`).
-2. Delete `/tmp/robot_bridge.py` on the Jetson Nano:
-   ```bash
-   rm -f /tmp/robot_bridge.py
-   ```
-3. Command arm to home/rest pose, fill out the Robot Return Google Form, and upload the return photo.
-
+Third-party code: OpenCV (ArUco, homography), Google MediaPipe Hand Landmarker (pretrained model),
+pymycobot (on the robot). Cite them in the report.
