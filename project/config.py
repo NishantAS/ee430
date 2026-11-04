@@ -38,11 +38,22 @@ MOVE_TIMEOUT_S = 15.0     # arm still moving after this long -> error
 # so tip = flange - (0, 0, TOOL_LENGTH_MM). Set it if you tape a pointer to the flange for calibration.
 TOOL_LENGTH_MM = 20.0
 
-# Starting overview pose for calibrate.py overview (flange coords, pointing straight down). The robot's own
-# orientation reading at the saved overview pose is then reused for every move, so its Euler convention never
-# has to be guessed. Pointing straight down, the arm only reaches roughly x = 160..240 mm: put the sheet centre
-# near (x, y) = (200, -60) mm (y = -60 is straight ahead: the wrist has a 64.6 mm sideways offset).
-DEFAULT_OVERVIEW_COORDS = [190.0, -60.0, 240.0, -180.0, 0.0, -90.0]
+# Arm shape. The robot's built-in IK (send_coords) keeps whatever elbow configuration the arm is in, so every
+# task-space move must START with the elbow bent UP (inverted V, clear of the base). In our DH convention that
+# is q3 < 0; q3 > 0 is the elbow-down "V" that hits the base. A send_coords move only starts if
+# q3 <= -ELBOW_UP_MIN_BEND_DEG (clearly bent up; a straight elbow could go either way) and is stopped if q3
+# rises above ELBOW_FLIP_Q3_DEG while moving. The taught overview must satisfy the same bend.
+ELBOW_UP_MIN_BEND_DEG = 15.0
+ELBOW_FLIP_Q3_DEG = 5.0
+ORI_TOL_DEG = 5.0          # send_coords: orientation within this of the target
+
+# Tool pointing straight down, as get_coords reports it: rx = 180, ry = 0 (rz = rotation about the vertical).
+DOWN_ORIENTATION = [180.0, 0.0, -90.0]
+# Starting pose for calibrate.py overview, reached by joint angles: elbow clearly up, camera straight down,
+# flange about (190, -60, 240) mm. Pointing straight down the arm only reaches roughly x = 160..240 mm and
+# z <= ~250 mm: put the sheet centre near (x, y) = (200, -60) mm (y = -60 is straight ahead: the wrist has a
+# 64.6 mm sideways offset).
+DEFAULT_OVERVIEW_ANGLES = [1.4, -18.3, -38.7, -32.9, 0.0, 1.4]
 
 # --------------------------------------------------------------------------- task
 HOVER_HEIGHT_MM = 40.0      # tool height above the table when hovering over a quadrant

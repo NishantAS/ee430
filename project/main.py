@@ -113,12 +113,14 @@ def run_trial(i, robot, cam, counter, detector, calib, log_truth):
     cv2.imwrite(str(config.RESULTS_DIR / f"trial_{i:02d}_overview.jpg"),
                 detector.draw(frame, detector.detect(frame), h_sheet_px, highlight=quadrant))
 
-    orient = calib["overview_coords"][3:]
+    orient, staging = store.hover_orientation(calib), store.staging_angles(calib)
     try:
+        robot.move_angles(staging)          # elbow-up start, so the robot's IK keeps the inverted-V shape
         robot.move_tool(approach, orient)
-        reached = robot.move_tool(hover, orient, mode=1)
+        reached = robot.move_tool(hover, orient)
     except RobotError as e:
         print(e)
+        robot.move_angles(staging)
         robot.move_angles(calib["overview_angles"])
         return {**row, "status": "UNREACHABLE"}
 
@@ -136,7 +138,8 @@ def run_trial(i, robot, cam, counter, detector, calib, log_truth):
         row["true_gesture"] = int(truth) if truth else quadrant
         row["measured_miss_mm"] = float(miss) if miss else ""
     time.sleep(1.0)
-    robot.move_tool(approach, orient, mode=1)
+    robot.move_tool(approach, orient)
+    robot.move_angles(staging)
     robot.move_angles(calib["overview_angles"])
     return row
 

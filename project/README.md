@@ -7,7 +7,7 @@ ArUco target sheet.
 |---|---|---|
 | A1 task | gesture → quadrant hover, repeatable | `main.py` |
 | A2 FK vs own DH | 15 poses, our FK vs `get_coords()` | `experiments.py fk` |
-| A3 IK | robot's built-in IK (`send_coords`) from elbow-up/down starts: branch choice + unreachable targets | `experiments.py ik` |
+| A3 IK | one pose, two joint solutions (elbow up / V); robot's built-in IK (`send_coords`) on reachable + unreachable targets | `experiments.py ik` |
 | A4 frames/units | mm + degrees everywhere, one base frame, `config.py` | – |
 | B1 detection | ArUco sheet + classical finger counter | `vision/` |
 | B2 calibration | pixel → robot-base homography from touched points | `calibrate.py table` |
@@ -35,6 +35,17 @@ ArUco target sheet.
   from the 4 marker centres (seen in the image + touched with the tool, positions from `get_coords`) and checked
   on a 5th touched point (sheet centre). No camera intrinsics or hand-eye matrix are needed.
 * **The sheet can move between trials**: every trial re-detects it; only the overview pose must stay fixed.
+
+## Arm shape: always elbow up (important)
+
+The robot's built-in IK keeps the elbow configuration the arm is already in. From an elbow-down "V" (or a
+straight elbow, which can go either way) it reaches down in a V and can hit the base. So:
+* every `send_coords` move refuses to start unless the elbow is clearly bent up (q3 ≤ −15°; q3 < 0 is the
+  inverted V in our DH convention), and is stopped (`stop()`) if q3 rises above +5° while moving;
+* task-space moves are straight lines (`send_coords` mode 1), so the IK follows the path continuously;
+* fixed poses (home, ready, overview) are reached by joint angles, and the taught overview must be elbow-up.
+
+If a script says the elbow is not bent up, run `python robot_tools.py ready` (or `overview`).
 
 ## Workspace limits (important)
 
@@ -64,6 +75,7 @@ accept `--host <ip>` (default `10.42.0.1`).
 
 ```bash
 python robot_tools.py status      # connection check: angles, get_coords vs our DH FK
+python robot_tools.py ready       # elbow-up start pose - every send_coords move must start elbow-up
 ```
 
 **2. Calibrate** (first session, and again whenever the robot or table setup changes)
@@ -75,7 +87,7 @@ python calibrate.py check         # arm visits all 4 quadrant crosses - verify b
 # or all four in sequence:  python calibrate.py all
 ```
 Teaching by hand (camera window focused): **hold the arm**, `SPACE` releases the servos (the arm goes limp),
-move it, `ENTER` locks it exactly where it is and records the pose, `ESC` aborts. The arm is always locked
+move it (keep the elbow bent up), `ENTER` locks it exactly where it is and records the pose, `ESC` aborts. The arm is always locked
 again before the script continues or exits. For the overview the robot then straightens the camera to point
 straight down; `ENTER` saves, `SPACE` teaches again. For the touches keep the tool roughly vertical. If you tape
 a pointer to the flange, set `TOOL_LENGTH_MM` in `config.py` first.

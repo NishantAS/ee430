@@ -25,7 +25,7 @@ import config
 from common import calibration_store as store
 from common.camera import Camera, put_lines, show
 from common.teach import teach
-from common.robot_client import RobotError, connect
+from common.robot_client import RobotError, connect, elbow_clearly_up
 from kinematics import dh_model
 from vision import sheet as sh
 
@@ -148,25 +148,26 @@ def cmd_overview(s: Session):
         frame[:] = detector.draw(frame, markers, detector.sheet_to_pixel(markers))
         return [f"markers visible: {len(markers)}/4"]
 
-    try:  # start near a sensible pose so there is less to move by hand
-        if "overview_angles" in calib:
-            go_overview(robot, calib)
-        else:
-            robot.move_coords(config.DEFAULT_OVERVIEW_COORDS)
-    except RobotError as e:
-        print(f"   (could not reach the start pose: {e})")
-    print("Move the arm by hand so the camera looks down at the sheet with all 4 markers green, then ENTER.")
+    # start from an elbow-up pose (by joint angles, no IK involved) so there is less to move by hand
+    robot.move_angles(calib.get("overview_angles", config.DEFAULT_OVERVIEW_ANGLES))
+    print("Move the arm by hand so the camera looks down at the sheet with all 4 markers green, then ENTER.\n"
+          "Keep the elbow bent UP (inverted V) and the camera no higher than ~250 mm above the robot base.")
     while True:
         taught = teach(robot, cam, "OVERVIEW: camera above the sheet, all 4 markers green", overlay)
         if taught is None:
             raise SystemExit("Aborted, nothing saved.")
-        coords, _ = taught
+        coords, angles = taught
+        if not elbow_clearly_up(angles):
+            print(f"   Elbow is not bent up enough (q3 = {angles[2]:.0f} deg, need <= "
+                  f"{-config.ELBOW_UP_MIN_BEND_DEG:.0f}): later moves could fold the arm into a V and hit the "
+                  "base. Teach again with the elbow higher (lower the camera a little if needed).")
+            continue
         # Hand placement is never exactly vertical: let the robot straighten the camera to point straight down
         # (rx = 180, ry = 0), keeping the position and the rotation about the vertical axis (rz).
         try:
             robot.move_coords([*coords[:3], 180.0, 0.0, coords[5]], config.SLOW_SPEED)
         except RobotError as e:
-            print(f"   Could not straighten the camera here ({e}). Try a slightly lower / closer pose.")
+            print(f"   Could not straighten the camera here ({e}). Try a slightly lower pose (z <= ~250 mm).")
             continue
         key = wait_key(cam, "OVERVIEW (camera straightened)",
                        ["ENTER = save this pose   SPACE = teach again   ESC = abort"], overlay)
@@ -245,20 +246,22 @@ def cmd_check(s: Session):
     robot, cam = s.robot, s.cam
     detector = sh.SheetDetector()
     h_px_base = np.array(calib["table"]["H_pixel_to_base"])
-    table_z, orient = calib["table"]["table_z_mm"], calib["overview_coords"][3:]
+    table_z, orient = calib["table"]["table_z_mm"], store.hover_orientation(calib)
 
     go_overview(robot, calib)
     _, _, h_sheet_px = detect_sheet(cam, detector, frames=3, need_all=False)
     if h_sheet_px is None:
         raise SystemExit("Sheet not visible from the overview pose.")
+    robot.move_angles(store.staging_angles(calib))   # elbow-up start for the robot's IK
     for q in sh.QUADRANT_CENTERS_MM:
         x, y = sh.quadrant_base_xy(h_sheet_px, h_px_base, q)
         above, hover = table_z + config.HOVER_HEIGHT_MM + config.APPROACH_EXTRA_MM, table_z + config.HOVER_HEIGHT_MM
         print(f"Quadrant {q}: base ({x:.1f}, {y:.1f}) mm")
         robot.move_tool((x, y, above), orient)
-        robot.move_tool((x, y, hover), orient, mode=1)
+        robot.move_tool((x, y, hover), orient)
         input("   Tool should be straight above the cross. Press ENTER for the next quadrant ...")
-        robot.move_tool((x, y, above), orient, mode=1)
+        robot.move_tool((x, y, above), orient)
+    robot.move_angles(store.staging_angles(calib))
     go_overview(robot, calib)
     print("Check finished.")
 

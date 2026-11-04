@@ -1,2 +1,2 @@
-trial,classifier,gesture,gesture_source,gesture_latency_ms,target_x,target_y,target_z,status
-1,mediapipe,2,mediapipe,28.15,289.83,10.46,33.97,UNREACHABLE
+trial,classifier,gesture,gesture_source,gesture_latency_ms,target_x,target_y,target_z,reached_coords,meas_q,robot_error_mm,status
+1,mediapipe,2,mediapipe,28.84,242.88,6.65,33.97,"[239.8, 3.4, 48.8, 177.92, 0.63, -42.62]","[16.25, -70.31, -75.49, 53.7, -0.52, -31.11]",6.84,OK

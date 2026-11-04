@@ -5,7 +5,7 @@ Runs ON THE JETSON NANO. Thin JSON-over-TCP wrapper around pymycobot so all logi
     ssh nano@10.42.0.1 python3 /tmp/robot_bridge.py   (Ctrl+C to stop; delete /tmp/robot_bridge.py when done)
 
 Protocol: one JSON object per line. Request {"cmd": ..., ...}, reply {"status": "ok"|"pong"|"error", ...}.
-Commands: ping, send_angles, send_coords, get_angles, get_coords, release_all_servos, lock_here, power_on, power_off.
+Commands: ping, send_angles, send_coords, get_angles, get_coords, stop, release_all_servos, lock_here, power_on, power_off.
 Kept Python 3.6 compatible (Jetson Nano image) and dependency-free apart from pymycobot.
 """
 
@@ -58,7 +58,7 @@ class Bridge:
                 return {"status": "ok", "angles": self._read(self.mc.get_angles)}
             if cmd == "get_coords":
                 return {"status": "ok", "coords": self._read(self.mc.get_coords)}
-            if cmd in ("release_all_servos", "power_on", "power_off"):
+            if cmd in ("release_all_servos", "power_on", "power_off", "stop"):
                 getattr(self.mc, cmd)()
                 return {"status": "ok"}
             if cmd == "lock_here":

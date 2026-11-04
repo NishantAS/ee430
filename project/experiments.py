@@ -2,8 +2,8 @@
 Experiments that produce the report's tables (all written to results/).
 
     python experiments.py fk          # A2: our DH FK vs the robot's get_coords over 15 poses -> fk_error_table.csv
-    python experiments.py ik          # A3: robot's built-in IK (send_coords) from two arm configurations,
-                                      #     reachable + unreachable targets -> ik_case_study.csv
+    python experiments.py ik          # A3: elbow-up vs elbow-down solutions of one pose + the robot's built-in
+                                      #     IK (send_coords) on reachable / unreachable targets -> ik_case_study.csv
     python experiments.py collect     # B/E: save labelled gesture images (keys 0-5) to dl/dataset/<label>/
     python experiments.py gestures    # B/E: classical vs MediaPipe accuracy + latency -> gesture_metrics.csv
 
@@ -30,18 +30,20 @@ FK_POSES = [
     [15, -35, -30, -20, 10, 30], [-15, -35, -30, -20, -10, -30], [0, 30, -70, 40, 0, 0],
 ]
 
-# A3: two arm configurations with the flange at the SAME place (about (190, -60, 240), pointing down):
-# elbow bent one way or the other. send_coords is issued from each, so we see which IK branch the robot picks.
-IK_START_CONFIGS = {"elbow-up start": [1.4, -18.3, -38.7, -32.9, 0.0, 1.4],
-                    "elbow-down start": [1.4, -54.2, 38.7, -74.5, 0.0, 1.4]}
-# Flange targets (x, y, height above the table in mm); orientation = calibrated overview (pointing down).
+# A3 part 1 (multiple solutions): two joint configurations, elbow up (inverted V) and elbow down (V), that put
+# the flange at the SAME pose (about (190, -60, 240) mm, pointing down). Reached by send_angles (joint paths
+# checked to stay above shoulder height), then get_coords shows both give the same pose.
+IK_SOLUTIONS = {"elbow up (inverted V)": [1.4, -18.3, -38.7, -32.9, 0.0, 1.4],
+                "elbow down (V)": [1.4, -54.2, 38.7, -74.5, 0.0, 1.4]}
+# A3 part 2 (robot's built-in IK, send_coords from the elbow-up pose): flange targets (x, y, height above the
+# table in mm); orientation = calibrated overview (pointing down). The last three are expected to fail.
 IK_CASES = [
     ("sheet centre", (200.0, -60.0, 60.0)),
     ("quadrant 1 side", (170.0, -30.0, 60.0)),
     ("quadrant 3 side", (230.0, -90.0, 60.0)),
-    ("FAIL? close to base (r ~ 125 mm)", (120.0, -40.0, 60.0)),
-    ("FAIL? beyond reach (r = 300 mm)", (300.0, 0.0, 60.0)),
-    ("FAIL? too high for a vertical tool", (160.0, -60.0, 320.0)),
+    ("close to base (r ~ 125 mm)", (120.0, -40.0, 60.0)),
+    ("beyond reach (r = 300 mm)", (300.0, 0.0, 60.0)),
+    ("too high for a vertical tool", (160.0, -60.0, 320.0)),
 ]
 
 
@@ -110,35 +112,42 @@ def cmd_fk(args):
 # --------------------------------------------------------------------------- A3
 def cmd_ik(args):
     """
-    For every target and both start configurations: send_coords, then read back where the arm went.
-    Same target + different resulting joint angles = the robot's IK picked a different solution branch.
-    A target the robot never reaches (RobotError after the timeout) is a failure case.
+    Part 1: the same flange pose from two joint solutions (elbow up / elbow down) -> multiple IK solutions.
+    Part 2: send_coords (the robot's own IK) from the elbow-up pose to reachable and unreachable targets.
+    The robot's IK keeps the current elbow shape, which is why every task-space move starts elbow-up.
     """
     calib = store.load(require=["overview_coords", "table"])
-    orient, table_z = calib["overview_coords"][3:], calib["table"]["table_z_mm"]
+    orient, table_z = store.hover_orientation(calib), calib["table"]["table_z_mm"]
     robot = connect(args.host, args.mock)
+    up_pose = IK_SOLUTIONS["elbow up (inverted V)"]
     rows = []
+
+    print("Part 1: two joint solutions for one pose")
+    for name, q_cmd in IK_SOLUTIONS.items():
+        robot.move_angles(q_cmd)
+        q, c = robot.get_angles(), robot.get_coords()
+        rows.append({"part": "multiple solutions", "case": name, "final_q": r2(q), "reached_coords": r2(c)})
+        print(f"   {name:<22} q = {r2(q)}  ->  coords {r2(c)}")
+    robot.move_angles(up_pose)
+
+    print("Part 2: send_coords from the elbow-up pose")
     for name, (x, y, h) in IK_CASES:
         target = [x, y, table_z + h, *orient]
-        for start_name, q_start in IK_START_CONFIGS.items():
-            robot.move_angles(q_start)
-            row = {"case": name, "start": start_name, "target_coords": r2(target)}
-            t0 = time.time()
-            try:
-                reached = robot.move_coords(target)
-                q = robot.get_angles()
-                row.update(reached=True, final_q=r2(q), reached_coords=r2(reached),
-                           pos_error_mm=round(float(np.linalg.norm(np.subtract(reached[:3], target[:3]))), 2))
-                msg = f"q = {r2(q)}"
-            except RobotError as e:
-                q = robot.get_angles()
-                row.update(reached=False, final_q=r2(q), note=str(e))
-                msg = "NOT reached"
-            row["time_s"] = round(time.time() - t0, 1)
-            rows.append(row)
-            print(f"{name:<36} {start_name:<17} {msg}")
-            if not row["reached"]:  # get away from wherever it stopped before the next start pose
-                robot.move_angles(config.HOME_ANGLES)
+        row = {"part": "send_coords", "case": name, "target_coords": r2(target)}
+        t0 = time.time()
+        try:
+            reached = robot.move_coords(target)
+            q = robot.get_angles()
+            row.update(reached=True, final_q=r2(q), reached_coords=r2(reached),
+                       pos_error_mm=round(float(np.linalg.norm(np.subtract(reached[:3], target[:3]))), 2))
+            msg = f"reached, q = {r2(q)}"
+        except RobotError as e:
+            row.update(reached=False, final_q=r2(robot.get_angles()), note=str(e))
+            msg = f"NOT reached: {e}"
+        row["time_s"] = round(time.time() - t0, 1)
+        rows.append(row)
+        print(f"   {name:<30} {msg}")
+        robot.move_angles(up_pose)   # back to the elbow-up start by joint angles
     robot.move_angles(config.HOME_ANGLES)
     write_csv("ik_case_study.csv", rows, args.mock)
 
